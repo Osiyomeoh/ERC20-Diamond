@@ -9,6 +9,7 @@ import "../contracts/facets/ERC721Facet.sol";
 import "../contracts/facets/MerkleFacet.sol";
 import "../contracts/facets/PresaleFacet.sol";
 import "../contracts/interfaces/IDiamondCut.sol";
+import "../contracts/interfaces/IERC721.sol";
 
 contract DiamondTest is Test {
     Diamond public diamond;
@@ -19,56 +20,60 @@ contract DiamondTest is Test {
     PresaleFacet public presaleFacet;
 
     function setUp() public {
-        // Deploy facets
-        diamondCutFacet = new DiamondCutFacet();
-        diamondLoupeFacet = new DiamondLoupeFacet();
-        erc721Facet = new ERC721Facet();
-        merkleFacet = new MerkleFacet();
-        presaleFacet = new PresaleFacet();
+    // Deploy facets
+    diamondCutFacet = new DiamondCutFacet();
+    diamondLoupeFacet = new DiamondLoupeFacet();
+    erc721Facet = new ERC721Facet("DiamondNFT", "DNFT");
+    merkleFacet = new MerkleFacet();
+    presaleFacet = new PresaleFacet();
 
-        // Deploy Diamond
-        diamond = new Diamond(address(this), address(diamondCutFacet));
+    // Deploy Diamond
+    diamond = new Diamond(
+        address(this),
+        address(diamondCutFacet),
+        "DiamondNFT",
+        "DNFT"
+    );
 
-        // Add facets
-        IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](4);
+    // Add other facets
+    IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](4);
 
-        cut[0] = IDiamondCut.FacetCut({
-            facetAddress: address(diamondLoupeFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: generateSelectors("DiamondLoupeFacet")
-        });
+    cut[0] = IDiamondCut.FacetCut({
+        facetAddress: address(diamondLoupeFacet),
+        action: IDiamondCut.FacetCutAction.Add,
+        functionSelectors: generateSelectors("DiamondLoupeFacet")
+    });
 
-        cut[1] = IDiamondCut.FacetCut({
-            facetAddress: address(erc721Facet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: generateSelectors("ERC721Facet")
-        });
+    cut[1] = IDiamondCut.FacetCut({
+        facetAddress: address(erc721Facet),
+        action: IDiamondCut.FacetCutAction.Add,
+        functionSelectors: generateSelectors("ERC721Facet")
+    });
 
-        cut[2] = IDiamondCut.FacetCut({
-            facetAddress: address(merkleFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: generateSelectors("MerkleFacet")
-        });
+    cut[2] = IDiamondCut.FacetCut({
+        facetAddress: address(merkleFacet),
+        action: IDiamondCut.FacetCutAction.Add,
+        functionSelectors: generateSelectors("MerkleFacet")
+    });
 
-        cut[3] = IDiamondCut.FacetCut({
-            facetAddress: address(presaleFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: generateSelectors("PresaleFacet")
-        });
+    cut[3] = IDiamondCut.FacetCut({
+        facetAddress: address(presaleFacet),
+        action: IDiamondCut.FacetCutAction.Add,
+        functionSelectors: generateSelectors("PresaleFacet")
+    });
 
-        IDiamondCut(address(diamond)).diamondCut(cut, address(0), "");
-    }
-
+    IDiamondCut(address(diamond)).diamondCut(cut, address(0), "");
+}
     function testMint() public {
-        ERC721Facet(address(diamond)).mint(address(this));
-        assertEq(ERC721Facet(address(diamond)).balanceOf(address(this)), 1);
-    }
+    ERC721Facet(address(diamond)).testMint(address(this), 1);
+    assertEq(IERC721(address(diamond)).balanceOf(address(this)), 1);
+}
 
     function testPresale() public {
         PresaleFacet(address(diamond)).startPresale();
         uint256 initialBalance = address(this).balance;
-        PresaleFacet(address(diamond)).buyTokens{value: 0.1 ether}();
-        assertEq(ERC721Facet(address(diamond)).balanceOf(address(this)), 3);
+        PresaleFacet(address(diamond)).buyTokens{value: 0.1 ether}(3);
+        assertEq(IERC721(address(diamond)).balanceOf(address(this)), 3);
         assertEq(address(this).balance, initialBalance - 0.1 ether);
     }
 

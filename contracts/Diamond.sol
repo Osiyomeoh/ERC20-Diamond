@@ -1,22 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-/******************************************************************************\
-* Author: Nick Mudge <nick@perfectabstractions.com> (https://twitter.com/mudgen)
-* EIP-2535 Diamonds: https://eips.ethereum.org/EIPS/eip-2535
-*
-* Implementation of a diamond.
-/******************************************************************************/
-
 import {LibDiamond} from "./libraries/LibDiamond.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 
 contract Diamond {
-    constructor(address _contractOwner, address _diamondCutFacet, string memory _name, string memory _symbol, uint8 _decimals) payable {
+    constructor(address _contractOwner, address _diamondCutFacet, string memory _name, string memory _symbol) payable {
         LibDiamond.setContractOwner(_contractOwner);
-        LibDiamond.diamondStorage().name = _name;
-        LibDiamond.diamondStorage().symbol = _symbol;
-        LibDiamond.diamondStorage().decimals = _decimals;
+        
+        // Set ERC721 basic information
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        ds.name = _name;
+        ds.symbol = _symbol;
 
         // Add the diamondCut external function from the diamondCutFacet
         IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](1);
@@ -59,11 +54,6 @@ contract Diamond {
                 return(0, returndatasize())
             }
         }
-    }
-
-    //immutable function example
-    function example() public pure returns (string memory) {
-        return "THIS IS AN EXAMPLE OF AN IMMUTABLE FUNCTION";
     }
 
     receive() external payable {}
