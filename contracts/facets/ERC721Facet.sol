@@ -55,9 +55,35 @@ contract ERC721Facet is IERC721Metadata {
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-        return string(abi.encodePacked("https://example.com/token/", Strings.toString(tokenId)));
+        return string(abi.encodePacked("https://example.com/token/", toString(tokenId)));
     }
 
+function toString(uint256 value) internal pure returns (string memory) {
+        // Special case for 0
+        if (value == 0) {
+            return "0";
+        }
+        
+        uint256 temp = value;
+        uint256 digits;
+        
+        // Count number of digits
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        
+        bytes memory buffer = new bytes(digits);
+        
+        // Fill buffer with digits in reverse order
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        
+        return string(buffer);
+    }
     function approve(address to, uint256 tokenId) public virtual override {
         address owner = ERC721Facet.ownerOf(tokenId);
         require(to != owner, "ERC721: approval to current owner");
